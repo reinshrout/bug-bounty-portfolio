@@ -16,6 +16,7 @@ Security researcher focused on **smart contract auditing** and **source-code rev
 | 1 | [Arc (Circle)](https://hackerone.com/arc-bbp) | `circlefin/arc-node` | `ValidatorRegistry._nextRegistrationId` defaults to 0 — first validator receives unusable registration ID, locked out of controller assignment and voting power | Low · CVSS 3.8 · CWE-16 | 🟡 Submitted 2026-10-23 · Report #4141500 |
 | 2 | [Anthropic](https://hackerone.com/anthropic) | `modelcontextprotocol/typescript-sdk` | `$async` JSON Schema bypasses client output-schema validation and crashes the client via unhandled rejection; ReDoS in peer-supplied `pattern` | Medium · CVSS 5.3 · CWE-20 | 🟡 Submitted |
 | 3 | CrowdProof Protocol | `crowdpay/crowdproof-protocol` | PaymentEscrow timelock withdrawal does not bind recipient or funding source — announced recipient never paid, arbitrary sink drained | Medium | ✅ Verified on-chain · disclosure channel inactive |
+| 4 | [Circle](https://hackerone.com/circle-bbp) | `circlefin/stablecoin-near` | `remove_controller` revokes the controller's roles and mapping but not the minter's `Role::Minter` / `minter_allowed` — orphaned minters retain minting capability after controller removal or key rotation | Low · CVSS 4.0 2.1 · CWE-459 | 🟡 Submitted 2026-10-24 · pre-submission review passed |
 
 ---
 
@@ -38,6 +39,12 @@ Security researcher focused on **smart contract auditing** and **source-code rev
 The treasury timelock announces an amount and a recipient at queue time, but `executeTreasuryWithdrawal` pays whatever recipient is passed at execution time. Verified on a local anvil instance: `queueTreasuryWithdrawal(A, 9e15)` followed by `executeTreasuryWithdrawal(1, B)` paid **B**, not A — announced recipient received 0, arbitrary sink received the full amount. A second test showed the same flaw on the escrow subject path (4e15 redirected to an unannounced sink while the treasury stayed intact).
 
 📄 [`findings/crowdproof-timelock-recipient-not-bound.md`](findings/crowdproof-timelock-recipient-not-bound.md)
+
+### 4. Circle — `remove_controller` leaves orphaned minters able to mint (stablecoin-near)
+
+The doc says `remove_controller` "removes its minter" — the code only deletes the controller mapping. `Role::Minter` and the `minter_allowed` allowance survive, and `mint()` checks nothing else. Net effect: minter key rotation (`M1` → `M2`) and decommissioning are both no-ops on the old minter, which keeps minting up to its remaining allowance. No MasterMinter-reachable recovery exists, because `RemoveMinter` requires the very controller mapping that was just deleted. Found by reading 8 Rust files end to end; classified CWE-459 (Incomplete Cleanup) per HackerOne review, scored 2.1 (Low) on their own CVSS 4.0 calculator.
+
+📄 [`findings/circle-stablecoin-near-minter-revocation.md`](findings/circle-stablecoin-near-minter-revocation.md)
 
 ---
 
