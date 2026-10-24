@@ -1,0 +1,64 @@
+# 🔍 Bug Bounty Portfolio — risolbihunlah
+
+Security researcher focused on **smart contract auditing** and **source-code review** of protocol infrastructure. I find logic flaws that scanners miss, verify every finding on-chain before reporting, and calibrate severity honestly — no over-claiming.
+
+**GitHub:** [risolbihunlah](https://github.com/risolbihunlah)
+**HackerOne:** [reinshrout22](https://hackerone.com/reinshrout22)
+**Focus:** Solidity · Rust · Go · TypeScript
+**Method:** source-code-first, PoC-verified, honest severity
+
+---
+
+## 📊 Track Record
+
+| # | Program | Target | Vulnerability | Severity | Status |
+|---|---------|--------|---------------|----------|--------|
+| 1 | [Arc (Circle)](https://hackerone.com/arc-bbp) | `circlefin/arc-node` | `ValidatorRegistry._nextRegistrationId` defaults to 0 — first validator receives unusable registration ID, locked out of controller assignment and voting power | Low · CVSS 3.8 · CWE-16 | 🟡 Submitted 2026-10-23 · Report #4141500 |
+| 2 | [Anthropic](https://hackerone.com/anthropic) | `modelcontextprotocol/typescript-sdk` | `$async` JSON Schema bypasses client output-schema validation and crashes the client via unhandled rejection; ReDoS in peer-supplied `pattern` | Medium · CVSS 5.3 · CWE-20 | 🟡 Submitted |
+| 3 | CrowdProof Protocol | `crowdpay/crowdproof-protocol` | PaymentEscrow timelock withdrawal does not bind recipient or funding source — announced recipient never paid, arbitrary sink drained | Medium | ✅ Verified on-chain · disclosure channel inactive |
+
+---
+
+## 📝 Writeups
+
+### 1. Arc (Circle) — ValidatorRegistry registration ID 0 sentinel collision
+
+`registerValidator()` assigns IDs via post-increment from an uninitialized counter. The contract's own docs say the counter starts at 1, but no on-chain code enforces it — the invariant lives in an off-chain genesis storage poke. Miss that step and the first validator gets ID 0, which is the reserved "not a controller" sentinel everywhere else in the suite: permanently locked at zero voting power, no consensus influence, no recovery function. Includes a 4-test Foundry PoC adapted from the project's own test file.
+
+📄 [`findings/arc-validator-registry-id-zero.md`](findings/arc-validator-registry-id-zero.md)
+
+### 2. Anthropic — MCP SDK AJV `$async` validation bypass + client crash
+
+`AjvJsonSchemaValidator` wraps AJV's compiled validator with `valid ? {valid: true} : …`. A schema containing `$async: true` compiles to an async validator returning a **Promise** — always truthy, so every input passes validation, and the rejection that follows is never handled. Because MCP servers supply the output schema, a malicious server can disable the client's only containment check and kill the host process via unhandled rejection. A second class measured in the same path: attacker-supplied `pattern` blocks the event loop for 55 seconds.
+
+📄 [`findings/anthropic-mcp-ajv-async-bypass.md`](findings/anthropic-mcp-ajv-async-bypass.md)
+
+### 3. CrowdProof — Timelock treasury withdrawal does not bind recipient
+
+The treasury timelock announces an amount and a recipient at queue time, but `executeTreasuryWithdrawal` pays whatever recipient is passed at execution time. Verified on a local anvil instance: `queueTreasuryWithdrawal(A, 9e15)` followed by `executeTreasuryWithdrawal(1, B)` paid **B**, not A — announced recipient received 0, arbitrary sink received the full amount. A second test showed the same flaw on the escrow subject path (4e15 redirected to an unannounced sink while the treasury stayed intact).
+
+📄 [`findings/crowdproof-timelock-recipient-not-bound.md`](findings/crowdproof-timelock-recipient-not-bound.md)
+
+---
+
+## 🛠 Methodology
+
+Full details in [`methodology.md`](methodology.md). The short version:
+
+1. **Program selection** — newly launched or low-competition programs where source code is in scope. Web surfaces get 3,000+ reports per quarter; source repos get a handful. Go where the scanners aren't.
+2. **Source-code-first** — clone the repo, read the core contracts/services end to end before touching any live endpoint. The $200K–$1M tier lives in consensus-critical logic, not in missing headers.
+3. **Sink identification** — map every trust boundary first (who supplies what data to whom), then audit the sinks: signature construction, access-control sentinels, initialization paths, schema validators.
+4. **PoC before claim** — every finding gets a runnable proof (Foundry test, standalone script) executed locally. If it doesn't run, it doesn't get reported.
+5. **Honest severity** — check for recovery paths and compensating controls before claiming impact. An accurate Low builds Signal; an inflated Medium burns it.
+
+---
+
+## 📫 Contact
+
+- GitHub: [github.com/risolbihunlah](https://github.com/risolbihunlah)
+- HackerOne: [hackerone.com/reinshrout22](https://hackerone.com/reinshrout22)
+- Reports are submitted through official program channels only.
+
+---
+
+*Portfolio maintained by risolbihunlah. All testing performed against in-scope assets under program rules; no live systems harmed.*
