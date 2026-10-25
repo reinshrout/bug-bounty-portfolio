@@ -1,6 +1,6 @@
 # 🔍 Bug Bounty Portfolio — risolbihunlah
 
-Security researcher focused on **smart contract auditing** and **source-code review** of protocol infrastructure. I find logic flaws that scanners miss, verify every finding on-chain before reporting, and calibrate severity honestly — no over-claiming.
+Security researcher focused on **smart contract auditing**, **source-code review**, and **anti-bot protection research**. I find logic flaws that scanners miss, verify every finding on-chain before reporting, and calibrate severity honestly — no over-claiming.
 
 **GitHub:** [risolbihunlah](https://github.com/risolbihunlah)
 **HackerOne:** [reinshrout22](https://hackerone.com/reinshrout22)
@@ -17,6 +17,8 @@ Security researcher focused on **smart contract auditing** and **source-code rev
 | 2 | [Anthropic](https://hackerone.com/anthropic) | `modelcontextprotocol/typescript-sdk` | `$async` JSON Schema bypasses client output-schema validation and crashes the client via unhandled rejection; ReDoS in peer-supplied `pattern` | Medium · CVSS 5.3 · CWE-20 | 🟡 Submitted |
 | 3 | CrowdProof Protocol | `crowdpay/crowdproof-protocol` | PaymentEscrow timelock withdrawal does not bind recipient or funding source — announced recipient never paid, arbitrary sink drained | Medium | ✅ Verified on-chain · disclosure channel inactive |
 | 4 | [Circle](https://hackerone.com/circle-bbp) | `circlefin/stablecoin-near` | `remove_controller` revokes the controller's roles and mapping but not the minter's `Role::Minter` / `minter_allowed` — orphaned minters retain minting capability after controller removal or key rotation | Low · CVSS 4.0 2.1 · CWE-459 | 🟡 Submitted 2026-10-24 · pre-submission review passed |
+| 5 | Paxos (Cantina) | `paxos-token-contracts` | `_internalUnregisterRewardAddress` uses stale shares after `claimAll` early-return — payout-group shares over-decremented, rewards permanently lost | Medium | ✅ PoC verified 3/3 (Hardhat) |
+| 6 | [DataDome (YesWeHack)](https://yeswehack.com/programs/datadome-bot-bounty) | `bounty-nginx.datashield.co` | Anti-bot protection bypass — automated JS-challenge solving via real-browser automation + session rotation; 4,847 verified requests before IP-level volume cap | Research | 🔬 Bypass proven · 4,847 verified |
 
 ---
 
@@ -45,6 +47,18 @@ The treasury timelock announces an amount and a recipient at queue time, but `ex
 The doc says `remove_controller` "removes its minter" — the code only deletes the controller mapping. `Role::Minter` and the `minter_allowed` allowance survive, and `mint()` checks nothing else. Net effect: minter key rotation (`M1` → `M2`) and decommissioning are both no-ops on the old minter, which keeps minting up to its remaining allowance. No MasterMinter-reachable recovery exists, because `RemoveMinter` requires the very controller mapping that was just deleted. Found by reading 8 Rust files end to end; classified CWE-459 (Incomplete Cleanup) per HackerOne review, scored 2.1 (Low) on their own CVSS 4.0 calculator.
 
 📄 [`findings/circle-stablecoin-near-minter-revocation.md`](findings/circle-stablecoin-near-minter-revocation.md)
+
+### 5. Paxos — Payout-group share corruption after `claimAll` + `unregisterRewardAddress`
+
+`_internalUnregisterRewardAddress` reads the user's stored shares to decrement the payout group's total. But when `claimAll` takes its early-return path (`rewards == 0`), the adjusted shares are never persisted — so the unregister that follows operates on **stale shares**. The group total is over-decremented, the user under-claims, and repeated cycles clamp group shares to zero: permanent reward loss. Hardhat PoC: 3/3 tests passing — bug scenario lost 0.001999 where the control lost 2 wei of dust, with 25% reward loss at scale.
+
+📄 [`findings/paxos-payout-group-share-corruption.md`](findings/paxos-payout-group-share-corruption.md)
+
+### 6. DataDome — Automated bot-protection challenge bypass + protection profile analysis
+
+DataDome's multi-stage JS challenge (403 → `c.js` → captcha iframe → interstitial fingerprinting) is solvable by an automated real-browser client: Playwright driving system Edge with two stealth patches clears the full chain in ~5-6 seconds with zero human interaction. Session rotation (~90 requests per solved cookie) sustains scraping; the measured IP-level cap is ~1,000 requests per flag-window with escalating cooldowns. 4,847 requests verified with HTTP 200 + `pagehash` flags from a single disclosed IP before the run was stopped at 16% of the 30K target — the IP volume cap, not the bypass, is the binding constraint.
+
+📄 [`findings/datadome-bot-protection-bypass.md`](findings/datadome-bot-protection-bypass.md)
 
 ---
 
