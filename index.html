@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>risolbihunlah — Security Researcher</title>
+<meta name="description" content="Bug bounty portfolio — smart contract auditing and source-code review. PoC-verified findings, honest severity.">
+<style>
+  :root {
+    --bg: #0a0e14;
+    --bg-card: #111721;
+    --bg-hover: #151d2b;
+    --border: #1e2938;
+    --text: #d6deeb;
+    --text-dim: #7d8aa3;
+    --text-bright: #f0f4fa;
+    --accent: #4fd1c5;
+    --accent-dim: #2c7a73;
+    --green: #9ae6b4;
+    --yellow: #f6e05e;
+    --orange: #f6ad55;
+    --red: #fc8181;
+    --mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,14,20,.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .container { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .nav-brand { font-family: var(--mono); font-weight: 700; color: var(--accent); font-size: 15px; text-decoration: none; }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 14px; transition: color .2s; }
+  .nav-links a:hover { color: var(--accent); }
+  @media (max-width: 640px) { .nav-links { display: none; } }
+
+  /* Hero */
+  .hero { padding: 80px 0 60px; border-bottom: 1px solid var(--border); }
+  .hero-label { font-family: var(--mono); color: var(--accent); font-size: 14px; margin-bottom: 16px; }
+  .hero h1 { font-size: 42px; font-weight: 800; color: var(--text-bright); line-height: 1.15; margin-bottom: 20px; letter-spacing: -0.5px; }
+  .hero h1 .accent { color: var(--accent); }
+  .hero p { font-size: 18px; color: var(--text-dim); max-width: 640px; margin-bottom: 32px; }
+  .hero-links { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    text-decoration: none; transition: all .2s; border: 1px solid var(--border);
+  }
+  .btn-primary { background: var(--accent); color: #0a0e14; border-color: var(--accent); }
+  .btn-primary:hover { background: #38b2ac; }
+  .btn-secondary { background: transparent; color: var(--text); }
+  .btn-secondary:hover { background: var(--bg-hover); border-color: var(--accent-dim); }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 40px 0; border-bottom: 1px solid var(--border); }
+  .stat { text-align: center; }
+  .stat-value { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  /* Sections */
+  section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+  .section-title { font-size: 24px; font-weight: 700; color: var(--text-bright); margin-bottom: 8px; }
+  .section-title::before { content: '//'; color: var(--accent); font-family: var(--mono); margin-right: 10px; }
+  .section-sub { color: var(--text-dim); font-size: 15px; margin-bottom: 32px; }
+
+  /* Track record table */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead { background: var(--bg-card); }
+  th { text-align: left; padding: 12px 16px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); font-weight: 600; border-bottom: 1px solid var(--border); }
+  td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background .15s; }
+  tbody tr:hover { background: var(--bg-hover); }
+  .prog { font-weight: 600; color: var(--text-bright); white-space: nowrap; }
+  .prog a { color: inherit; text-decoration: none; }
+  .prog a:hover { color: var(--accent); }
+  .target { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+  .vuln { color: var(--text); min-width: 260px; }
+  .sev { font-family: var(--mono); font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 4px; white-space: nowrap; display: inline-block; }
+  .sev-low { background: rgba(246,224,94,.12); color: var(--yellow); }
+  .sev-med { background: rgba(246,173,85,.12); color: var(--orange); }
+  .status { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+
+  /* Finding cards */
+  .findings { display: grid; gap: 16px; }
+  .finding {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; transition: border-color .2s;
+  }
+  .finding:hover { border-color: var(--accent-dim); }
+  .finding-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .finding-title { font-size: 17px; font-weight: 700; color: var(--text-bright); }
+  .finding-title .num { color: var(--accent); font-family: var(--mono); margin-right: 8px; }
+  .finding-body { color: var(--text-dim); font-size: 14.5px; margin-bottom: 14px; }
+  .finding-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tag { font-family: var(--mono); font-size: 11.5px; color: var(--accent); background: rgba(79,209,197,.08); border: 1px solid rgba(79,209,197,.2); padding: 3px 10px; border-radius: 99px; }
+
+  /* Methodology */
+  .method { display: grid; gap: 14px; counter-reset: step; }
+  .method-step { display: flex; gap: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; }
+  .method-num { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent); min-width: 36px; }
+  .method-step h3 { font-size: 15px; color: var(--text-bright); margin-bottom: 4px; }
+  .method-step p { font-size: 14px; color: var(--text-dim); }
+
+  /* Contact */
+  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .contact-grid { grid-template-columns: 1fr; } }
+  .contact-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; display: block; transition: border-color .2s; }
+  .contact-card:hover { border-color: var(--accent-dim); }
+  .contact-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); margin-bottom: 6px; }
+  .contact-card .value { font-family: var(--mono); font-size: 16px; color: var(--accent); font-weight: 600; }
+
+  footer { padding: 40px 0; text-align: center; color: var(--text-dim); font-size: 13px; }
+  footer .mono { font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a class="nav-brand" href="#">~/risolbihunlah</a>
+    <div class="nav-links">
+      <a href="#track-record">Track Record</a>
+      <a href="#writeups">Writeups</a>
+      <a href="#methodology">Methodology</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="hero-label">// security researcher</div>
+    <h1>I find logic flaws<br>that <span class="accent">scanners miss</span>.</h1>
+    <p>Smart contract auditing and source-code review of protocol infrastructure. Every finding is verified with a runnable proof before it gets reported — and severity is calibrated honestly, never inflated.</p>
+    <div class="hero-links">
+      <a class="btn btn-primary" href="https://github.com/risolbihunlah">GitHub ↗</a>
+      <a class="btn btn-secondary" href="https://hackerone.com/reinshrout22">HackerOne ↗</a>
+      <a class="btn btn-secondary" href="https://github.com/risolbihunlah/bug-bounty-portfolio">Full Writeups ↗</a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="stat-value">5</div><div class="stat-label">Findings reported</div></div>
+    <div class="stat"><div class="stat-value">4</div><div class="stat-label">Programs</div></div>
+    <div class="stat"><div class="stat-value">100%</div><div class="stat-label">PoC-verified</div></div>
+    <div class="stat"><div class="stat-value">0</div><div class="stat-label">Over-claimed</div></div>
+  </div>
+</div>
+
+<section id="track-record">
+  <div class="container">
+    <h2 class="section-title">Track Record</h2>
+    <p class="section-sub">Submitted through official program channels only. All testing against in-scope assets under program rules.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Program</th><th>Target</th><th>Vulnerability</th><th>Severity</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td class="prog"><a href="https://hackerone.com/arc-bbp">Arc (Circle)</a></td>
+            <td class="target">circlefin/arc-node</td>
+            <td class="vuln">ValidatorRegistry registration ID 0 sentinel collision — first validator permanently locked at zero voting power</td>
+            <td><span class="sev sev-low">Low · 3.8</span></td>
+            <td class="status">🟡 Submitted</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td class="prog"><a href="https://hackerone.com/anthropic">Anthropic</a></td>
+            <td class="target">typescript-sdk</td>
+            <td class="vuln">AJV <code>$async</code> bypasses MCP output-schema validation; malicious server disables client containment + ReDoS</td>
+            <td><span class="sev sev-med">Medium · 5.3</span></td>
+            <td class="status">🟡 Submitted</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td class="prog">CrowdProof</td>
+            <td class="target">crowdproof-protocol</td>
+            <td class="vuln">Timelock treasury withdrawal does not bind recipient — announced payee never paid, arbitrary sink drained</td>
+            <td><span class="sev sev-med">Medium</span></td>
+            <td class="status">✅ On-chain verified</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td class="prog"><a href="https://hackerone.com/circle-bbp">Circle</a></td>
+            <td class="target">circlefin/stablecoin-near</td>
+            <td class="vuln"><code>remove_controller</code> leaves orphaned minters with live minting capability — key rotation is a no-op</td>
+            <td><span class="sev sev-low">Low · 2.1</span></td>
+            <td class="status">🟡 Pre-review passed</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td class="prog">Paxos (Cantina)</td>
+            <td class="target">paxos-token-contracts</td>
+            <td class="vuln">Runtime authorization replay — signed nonce never enforced on-chain; payout-group shares corrupted after claimAll</td>
+            <td><span class="sev sev-med">Medium</span></td>
+            <td class="status">✅ PoC verified 3/3</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="writeups">
+  <div class="container">
+    <h2 class="section-title">Writeups</h2>
+    <p class="section-sub">Full analyses with reproduction steps in the <a href="https://github.com/risolbihunlah/bug-bounty-portfolio" style="color:var(--accent)">portfolio repo</a>.</p>
+    <div class="findings">
+      <div class="finding">
+        <div class="finding-head"><div class="finding-title"><span class="num">01</span>ValidatorRegistry registration ID 0 sentinel collision</div></div>
+        <div class="finding-body"><code>registerValidator()</code> assigns IDs via post-increment from an uninitialized counter. The docs say the counter starts at 1 — but no on-chain code enforces it. Miss the genesis storage poke and the first validator gets ID 0, the reserved "not a controller" sentinel: permanently locked at zero voting power, no recovery function. Includes a 4-test Foundry PoC.</div>
+        <div class="finding-tags"><span class="tag">Solidity</span><span class="tag">Foundry PoC</span><span class="tag">CWE-16</span><span class="tag">Consensus</span></div>
+      </div>
+      <div class="finding">
+        <div class="finding-head"><div class="finding-title"><span class="num">02</span>MCP SDK AJV <code>$async</code> validation bypass + client crash</div></div>
+        <div class="finding-body">A schema containing <code>$async: true</code> compiles to an async validator returning a Promise — always truthy, so every input passes. Because MCP servers supply the output schema, a malicious server disables the client's only containment check and kills the host via unhandled rejection. Second class measured in the same path: attacker-supplied <code>pattern</code> blocks the event loop for 55 seconds.</div>
+        <div class="finding-tags"><span class="tag">TypeScript</span><span class="tag">AJV</span><span class="tag">CWE-20</span><span class="tag">ReDoS</span></div>
+      </div>
+      <div class="finding">
+        <div class="finding-head"><div class="finding-title"><span class="num">03</span>Timelock treasury withdrawal does not bind recipient</div></div>
+        <div class="finding-body">The timelock announces an amount and recipient at queue time, but <code>executeTreasuryWithdrawal</code> pays whatever recipient is passed at execution time. Verified on local anvil: <code>queueTreasuryWithdrawal(A, 9e15)</code> then <code>executeTreasuryWithdrawal(1, B)</code> paid <strong>B</strong>, not A — announced recipient received 0, arbitrary sink received the full amount.</div>
+        <div class="finding-tags"><span class="tag">Solidity</span><span class="tag">Anvil PoC</span><span class="tag">Timelock</span><span class="tag">Fund flow</span></div>
+      </div>
+      <div class="finding">
+        <div class="finding-head"><div class="finding-title"><span class="num">04</span><code>remove_controller</code> leaves orphaned minters able to mint</div></div>
+        <div class="finding-body">The doc says it "removes its minter" — the code only deletes the controller mapping. <code>Role::Minter</code> and the <code>minter_allowed</code> allowance survive, and <code>mint()</code> checks nothing else. Minter key rotation and decommissioning are both no-ops on the old minter. No recovery exists: <code>RemoveMinter</code> requires the very controller mapping that was just deleted. Found by reading 8 Rust files end to end.</div>
+        <div class="finding-tags"><span class="tag">Rust</span><span class="tag">NEAR</span><span class="tag">CWE-459</span><span class="tag">Access control</span></div>
+      </div>
+      <div class="finding">
+        <div class="finding-head"><div class="finding-title"><span class="num">05</span>Runtime authorization replay — signed nonce never enforced</div></div>
+        <div class="finding-body"><code>executeWithRuntimeValidation</code> accepts an authorization whose <code>nonce</code> is signed by the multisig signers but never stored or validated on-chain. An executed authorization can be resubmitted indefinitely by the bound sender. The userOp path is protected by the EntryPoint nonce; only the native runtime path is affected. Hardhat PoC: 3/3 tests passing.</div>
+        <div class="finding-tags"><span class="tag">Solidity</span><span class="tag">ERC-4337/6900</span><span class="tag">Hardhat PoC</span><span class="tag">Replay</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="methodology">
+  <div class="container">
+    <h2 class="section-title">Methodology</h2>
+    <p class="section-sub">How findings get found — and why they hold up in triage.</p>
+    <div class="method">
+      <div class="method-step"><div class="method-num">1</div><div><h3>Program selection</h3><p>Newly launched or low-competition programs where source code is in scope. Web surfaces get 3,000+ reports per quarter; source repos get a handful. Go where the scanners aren't.</p></div></div>
+      <div class="method-step"><div class="method-num">2</div><div><h3>Source-code-first</h3><p>Clone the repo, read the core contracts/services end to end before touching any live endpoint. The high-severity tier lives in consensus-critical logic, not missing headers.</p></div></div>
+      <div class="method-step"><div class="method-num">3</div><div><h3>Sink identification</h3><p>Map every trust boundary first — who supplies what data to whom — then audit the sinks: signature construction, access-control sentinels, initialization paths, schema validators.</p></div></div>
+      <div class="method-step"><div class="method-num">4</div><div><h3>PoC before claim</h3><p>Every finding gets a runnable proof (Foundry test, standalone script) executed locally. If it doesn't run, it doesn't get reported.</p></div></div>
+      <div class="method-step"><div class="method-num">5</div><div><h3>Honest severity</h3><p>Check for recovery paths and compensating controls before claiming impact. An accurate Low builds Signal; an inflated Medium burns it.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="container">
+    <h2 class="section-title">Contact</h2>
+    <p class="section-sub">Reports go through official program channels only.</p>
+    <div class="contact-grid">
+      <a class="contact-card" href="https://github.com/risolbihunlah">
+        <div class="label">GitHub</div>
+        <div class="value">github.com/risolbihunlah</div>
+      </a>
+      <a class="contact-card" href="https://hackerone.com/reinshrout22">
+        <div class="label">HackerOne</div>
+        <div class="value">hackerone.com/reinshrout22</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="mono" style="margin-bottom:8px">risolbihunlah</div>
+    <div>All testing performed against in-scope assets under program rules; no live systems harmed.</div>
+  </div>
+</footer>
+
+</body>
+</html>
