@@ -146,7 +146,7 @@
   <div class="container">
     <div class="hero-label">// security researcher</div>
     <h1>I find logic flaws<br>that <span class="accent">scanners miss</span>.</h1>
-    <p>Smart contract auditing and source-code review of protocol infrastructure. Every finding is verified with a runnable proof before it gets reported — and severity is calibrated honestly, never inflated.</p>
+    <p>Smart contract auditing, source-code review, and anti-bot protection research. Every finding is verified with a runnable proof before it gets reported — and severity is calibrated honestly, never inflated.</p>
     <div class="hero-links">
       <a class="btn btn-primary" href="https://github.com/risolbihunlah">GitHub ↗</a>
       <a class="btn btn-secondary" href="https://hackerone.com/reinshrout22">HackerOne ↗</a>
@@ -157,8 +157,8 @@
 
 <div class="container">
   <div class="stats">
-    <div class="stat"><div class="stat-value">5</div><div class="stat-label">Findings reported</div></div>
-    <div class="stat"><div class="stat-value">4</div><div class="stat-label">Programs</div></div>
+    <div class="stat"><div class="stat-value">6</div><div class="stat-label">Findings reported</div></div>
+    <div class="stat"><div class="stat-value">5</div><div class="stat-label">Programs</div></div>
     <div class="stat"><div class="stat-value">100%</div><div class="stat-label">PoC-verified</div></div>
     <div class="stat"><div class="stat-value">0</div><div class="stat-label">Over-claimed</div></div>
   </div>
@@ -214,6 +214,14 @@
             <td><span class="sev sev-med">Medium</span></td>
             <td class="status">✅ PoC verified 3/3</td>
           </tr>
+          <tr>
+            <td>6</td>
+            <td class="prog"><a href="https://yeswehack.com/programs/datadome-bot-bounty">DataDome (YesWeHack)</a></td>
+            <td class="target">bounty-nginx.datashield.co</td>
+            <td class="vuln">Anti-bot protection bypass — automated JS-challenge solving via real-browser automation + session rotation; 4,847 verified requests before IP-level volume cap</td>
+            <td><span class="sev sev-med">Research</span></td>
+            <td class="status">🔬 Bypass proven</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -249,6 +257,11 @@
         <div class="finding-head"><div class="finding-title"><span class="num">05</span>Runtime authorization replay — signed nonce never enforced</div></div>
         <div class="finding-body"><code>executeWithRuntimeValidation</code> accepts an authorization whose <code>nonce</code> is signed by the multisig signers but never stored or validated on-chain. An executed authorization can be resubmitted indefinitely by the bound sender. The userOp path is protected by the EntryPoint nonce; only the native runtime path is affected. Hardhat PoC: 3/3 tests passing.</div>
         <div class="finding-tags"><span class="tag">Solidity</span><span class="tag">ERC-4337/6900</span><span class="tag">Hardhat PoC</span><span class="tag">Replay</span></div>
+      </div>
+      <div class="finding">
+        <div class="finding-head"><div class="finding-title"><span class="num">06</span>DataDome bot protection — automated challenge bypass</div></div>
+        <div class="finding-body">DataDome's multi-stage JS challenge (403 → <code>c.js</code> → captcha iframe → interstitial fingerprinting) is solvable by an automated real-browser client: Playwright driving system Edge with two stealth patches clears the full chain in ~5-6 seconds with zero human interaction. Each solved session yields ~90 requests before re-challenge; rotating browser contexts sustains scraping indefinitely. Measured protection profile: ~100 requests per session cookie, ~1,000 requests per IP flag-window, escalating cooldowns on repeat offense (6→15→60+ min), and per-host variance (nginx viable; nodejs/fastly/cloudfront effectively dead). 4,847 requests verified with HTTP 200 + <code>pagehash</code> flags from a single disclosed IP before the run was stopped at 16% of the 30K target — the IP-level volume cap, not the bypass, is the binding constraint. Full runnable scraper + 4,847-row evidence CSV archived.</div>
+        <div class="finding-tags"><span class="tag">Playwright</span><span class="tag">Anti-bot</span><span class="tag">Automation</span><span class="tag">Evidence CSV</span></div>
       </div>
     </div>
   </div>
