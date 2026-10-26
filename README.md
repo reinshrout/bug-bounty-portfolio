@@ -4,7 +4,7 @@ Security researcher focused on **smart contract auditing**, **source-code review
 
 **GitHub:** [reinshrout](https://github.com/reinshrout)
 **HackerOne:** [reinshrout22](https://hackerone.com/reinshrout22)
-**Focus:** Solidity · Rust · Go · TypeScript
+**Focus:** Solidity · Rust (Solana/NEAR) · Go · TypeScript
 **Method:** source-code-first, PoC-verified, honest severity
 
 ---
@@ -19,6 +19,7 @@ Security researcher focused on **smart contract auditing**, **source-code review
 | 4 | [Circle](https://hackerone.com/circle-bbp) | `circlefin/stablecoin-near` | `remove_controller` revokes the controller's roles and mapping but not the minter's `Role::Minter` / `minter_allowed` — orphaned minters retain minting capability after controller removal or key rotation | Low · CVSS 4.0 2.1 · CWE-459 | 🟡 Submitted 2026-10-24 · pre-submission review passed |
 | 5 | Paxos (Cantina) | `paxos-token-contracts` | `_internalUnregisterRewardAddress` uses stale shares after `claimAll` early-return — payout-group shares over-decremented, rewards permanently lost | Medium | ✅ PoC verified 3/3 (Hardhat) |
 | 6 | [DataDome (YesWeHack)](https://yeswehack.com/programs/datadome-bot-bounty) | `bounty-nginx.datashield.co` | Anti-bot protection bypass — automated JS-challenge solving via real-browser automation + session rotation; 4,847 verified requests before IP-level volume cap | Research | 🔬 Bypass proven · 4,847 verified |
+| 7 | [1win](https://hackerone.com/1win_com) | `$1WIN Solana programs` | Key separation violation — one key holds upgrade + mint authority (all 3 programs), second key holds freeze authority; vaults freezable → all claims/refunds fail permanently. $6.28M USDC + 770M+ $1WIN at risk | High · CVSS 4.0 8.3 · CWE-732 | 🟡 Submitted 2026-10-26 |
 
 ---
 
@@ -59,6 +60,12 @@ The doc says `remove_controller` "removes its minter" — the code only deletes 
 DataDome's multi-stage JS challenge (403 → `c.js` → captcha iframe → interstitial fingerprinting) is solvable by an automated real-browser client: Playwright driving system Edge with two stealth patches clears the full chain in ~5-6 seconds with zero human interaction. Session rotation (~90 requests per solved cookie) sustains scraping; the measured IP-level cap is ~1,000 requests per flag-window with escalating cooldowns. 4,847 requests verified with HTTP 200 + `pagehash` flags from a single disclosed IP before the run was stopped at 16% of the 30K target — the IP volume cap, not the bypass, is the binding constraint.
 
 📄 [`findings/datadome-bot-protection-bypass.md`](findings/datadome-bot-protection-bypass.md)
+
+### 7. 1WIN — Key separation violation: shared upgrade/mint authority + active freeze authority
+
+Full source audit of the $1WIN Solana programs (7,216 LOC across Sale/Vesting/Burn — math cores, state machines, access controls all clean, consistent with prior Halborn + CertiK audits) followed by on-chain verification via public JSON-RPC. The live configuration concentrates critical authorities in single EOAs: one key holds **both** the program upgrade authority (all three programs) **and** the token mint authority; a second key holds the SPL freeze authority, which can freeze any token account — including the program vaults holding **$6.28M USDC** (sale deposits, 2,633 participants) and **770M+ $1WIN** in vesting allocations. Freezing the vaults makes every claim and refund instruction fail permanently: SPL Token rejects transfers from frozen accounts, and neither program contains a frozen-vault check. The mint authority is still active with supply 0 (pre-TGE), leaving the "fixed 1B supply" promise unenforced on-chain.
+
+📄 [`findings/1win-key-centralization.md`](findings/1win-key-centralization.md)
 
 ---
 
