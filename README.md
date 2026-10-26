@@ -1,8 +1,8 @@
-# 🔍 Bug Bounty Portfolio — risolbihunlah
+# 🔍 Bug Bounty Portfolio — reinshrout
 
 Security researcher focused on **smart contract auditing**, **source-code review**, and **anti-bot protection research**. I find logic flaws that scanners miss, verify every finding on-chain before reporting, and calibrate severity honestly — no over-claiming.
 
-**GitHub:** [risolbihunlah](https://github.com/risolbihunlah)
+**GitHub:** [reinshrout](https://github.com/reinshrout)
 **HackerOne:** [reinshrout22](https://hackerone.com/reinshrout22)
 **Focus:** Solidity · Rust · Go · TypeScript
 **Method:** source-code-first, PoC-verified, honest severity
@@ -76,10 +76,10 @@ Full details in [`methodology.md`](methodology.md). The short version:
 
 ## 📫 Contact
 
-- GitHub: [github.com/risolbihunlah](https://github.com/risolbihunlah)
+- GitHub: [github.com/reinshrout](https://github.com/reinshrout)
 - HackerOne: [hackerone.com/reinshrout22](https://hackerone.com/reinshrout22)
 - Reports are submitted through official program channels only.
 
 ---
 
-*Portfolio maintained by risolbihunlah. All testing performed against in-scope assets under program rules; no live systems harmed.*
+*Portfolio maintained by reinshrout. All testing performed against in-scope assets under program rules; no live systems harmed.*
